@@ -1,0 +1,23 @@
+{
+  "name": "@openjidoka/integrations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./openjev": "./src/openjev/index.ts",
+    "./connectors": "./src/connectors/index.ts",
+    "./errors": "./src/errors.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@openjidoka/core": "workspace:^"
+  }
+}

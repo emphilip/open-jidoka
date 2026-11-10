@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:jidoka="http://openjidoka.dev/schema/bpmn/1.0"
+                  id="Definitions_invoice"
+                  targetNamespace="http://openjidoka.dev/examples">
+  <bpmn:process id="invoice_approval" name="Invoice approval" isExecutable="true">
+    <bpmn:startEvent id="start" name="Invoice received" />
+    <bpmn:sequenceFlow id="f_start_extract" sourceRef="start" targetRef="extract" />
+
+    <bpmn:serviceTask id="extract" name="Extract invoice fields">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="openjev.extract" resultVariable="invoice"><![CDATA[{
+  "document": "=input.document",
+  "instructions": "Extract the invoice header. Use ISO 4217 currency codes.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "invoiceNumber": { "type": "string" },
+      "vendor": { "type": "string" },
+      "total": { "type": "number" },
+      "currency": { "type": "string" },
+      "dueDate": { "type": "string", "format": "date" }
+    },
+    "required": ["invoiceNumber", "vendor", "total", "currency"]
+  },
+  "validation": {
+    "maxAttempts": 3,
+    "rules": [
+      { "expr": "output.total > 0", "message": "Total must be positive" },
+      { "expr": "$length(output.currency) = 3", "message": "Currency must be a 3 letter ISO code" }
+    ],
+    "judge": { "criteria": "Every extracted value appears in the document.", "minConfidence": 0.75 },
+    "onFailure": "humanReview",
+    "reviewAssignee": "ap-team@example.com"
+  }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f_extract_decide" sourceRef="extract" targetRef="decide" />
+
+    <bpmn:serviceTask id="decide" name="Assess risk">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="openjev.decide" resultVariable="decision"><![CDATA[{
+  "question": "Can this invoice be auto-approved under the accounts payable policy?",
+  "options": ["approve", "review"],
+  "context": { "invoice": "=vars.invoice", "policy": "Auto-approve known vendors under 10000." },
+  "validation": {
+    "maxAttempts": 2,
+    "rules": [{ "expr": "output.confidence >= 0.6", "message": "Decision confidence below 0.6" }],
+    "onFailure": "continue"
+  }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f_decide_route" sourceRef="decide" targetRef="route" />
+
+    <bpmn:exclusiveGateway id="route" name="Auto-approve?" default="f_route_review" />
+    <bpmn:sequenceFlow id="f_route_auto" name="yes" sourceRef="route" targetRef="approved_merge">
+      <bpmn:conditionExpression>vars.decision.choice = "approve" and vars.invoice.total &lt; 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_route_review" name="no" sourceRef="route" targetRef="approve" />
+
+    <bpmn:userTask id="approve" name="Approve invoice">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig resultVariable="approval"><![CDATA[{
+  "assignee": "finance-approver@example.com",
+  "instructions": "Invoice {{ vars.invoice.invoiceNumber }} from {{ vars.invoice.vendor }} for {{ vars.invoice.total }} {{ vars.invoice.currency }} needs approval.",
+  "form": [{ "name": "comment", "label": "Comment", "type": "text" }],
+  "context": { "invoice": "=vars.invoice", "decision": "=vars.decision" }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="f_approve_check" sourceRef="approve" targetRef="approved" />
+
+    <bpmn:exclusiveGateway id="approved" name="Approved?" default="f_approved_no" />
+    <bpmn:sequenceFlow id="f_approved_yes" name="yes" sourceRef="approved" targetRef="approved_merge">
+      <bpmn:conditionExpression>vars.approval.approved = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_approved_no" name="no" sourceRef="approved" targetRef="notify_rejected" />
+
+    <bpmn:serviceTask id="notify_rejected" name="Notify rejection in Teams">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="connector"><![CDATA[{
+  "connection": "finance-teams",
+  "action": "postMessage",
+  "params": {
+    "title": "Invoice rejected",
+    "text": "Invoice {{ vars.invoice.invoiceNumber }} was rejected by {{ vars.approval.actor }}: {{ vars.approval.comment }}"
+  }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f_rejected_end" sourceRef="notify_rejected" targetRef="end_rejected" />
+    <bpmn:endEvent id="end_rejected" name="Rejected" />
+
+    <bpmn:exclusiveGateway id="approved_merge" />
+    <bpmn:sequenceFlow id="f_merge_split" sourceRef="approved_merge" targetRef="archive_split" />
+    <bpmn:parallelGateway id="archive_split" />
+    <bpmn:sequenceFlow id="f_split_upload" sourceRef="archive_split" targetRef="upload" />
+    <bpmn:sequenceFlow id="f_split_notify" sourceRef="archive_split" targetRef="notify_paid" />
+
+    <bpmn:serviceTask id="upload" name="File in SharePoint">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="connector" resultVariable="archived"><![CDATA[{
+  "connection": "finance-sharepoint",
+  "action": "uploadFile",
+  "params": {
+    "folderPath": "Invoices/Approved",
+    "filename": "{{ vars.invoice.invoiceNumber }}.json",
+    "content": "=$string(vars.invoice)"
+  },
+  "retry": { "maximumAttempts": 5, "initialInterval": "5s" }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="notify_paid" name="Notify approval in Teams">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="connector"><![CDATA[{
+  "connection": "finance-teams",
+  "action": "postMessage",
+  "params": {
+    "title": "Invoice approved",
+    "text": "Invoice {{ vars.invoice.invoiceNumber }} for {{ vars.invoice.total }} {{ vars.invoice.currency }} is approved for payment."
+  }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f_upload_join" sourceRef="upload" targetRef="archive_join" />
+    <bpmn:sequenceFlow id="f_notify_join" sourceRef="notify_paid" targetRef="archive_join" />
+    <bpmn:parallelGateway id="archive_join" />
+    <bpmn:sequenceFlow id="f_join_end" sourceRef="archive_join" targetRef="end_paid" />
+    <bpmn:endEvent id="end_paid" name="Approved" />
+  </bpmn:process>
+</bpmn:definitions>

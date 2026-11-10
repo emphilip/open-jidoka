@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:jidoka="http://openjidoka.dev/schema/bpmn/1.0"
+                  id="Definitions_smoke"
+                  targetNamespace="http://openjidoka.dev/examples">
+  <bpmn:process id="smoke" name="Smoke test" isExecutable="true">
+    <bpmn:startEvent id="start" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="summarise" />
+    <bpmn:serviceTask id="summarise" name="Summarise request">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="openjev.prompt" resultVariable="summary"><![CDATA[{
+  "prompt": "Summarise: {{ input.request }}",
+  "outputSchema": { "type": "object", "properties": { "summary": { "type": "string" } }, "required": ["summary"] },
+  "validation": { "schema": { "type": "object", "required": ["summary"] }, "judge": { "minConfidence": 0.5 } }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f2" sourceRef="summarise" targetRef="approve" />
+    <bpmn:userTask id="approve" name="Approve request">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig resultVariable="approval"><![CDATA[{
+  "instructions": "Approve: {{ vars.summary.summary }}",
+  "form": [{ "name": "comment", "type": "text" }]
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="f3" sourceRef="approve" targetRef="ping" />
+    <bpmn:serviceTask id="ping" name="Call internal API">
+      <bpmn:extensionElements>
+        <jidoka:taskConfig taskType="connector" resultVariable="health"><![CDATA[{
+  "connection": "internal-api",
+  "action": "request",
+  "params": { "method": "GET", "path": "api/health" }
+}]]></jidoka:taskConfig>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f4" sourceRef="ping" targetRef="end" />
+    <bpmn:endEvent id="end" />
+  </bpmn:process>
+</bpmn:definitions>

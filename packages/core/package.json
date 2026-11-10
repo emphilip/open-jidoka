@@ -1,0 +1,27 @@
+{
+  "name": "@openjidoka/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./src/types.ts",
+    "./expressions": "./src/expressions.ts",
+    "./duration": "./src/duration.ts",
+    "./bpmn": "./src/bpmn/parse.ts",
+    "./bpmn/jidoka-moddle.json": "./src/bpmn/jidoka-moddle.json",
+    "./task-templates": "./src/task-templates.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "bpmn-moddle": "^10.3.1",
+    "jsonata": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

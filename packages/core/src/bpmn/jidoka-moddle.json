@@ -1,0 +1,20 @@
+{
+  "name": "OpenJidoka",
+  "prefix": "jidoka",
+  "uri": "http://openjidoka.dev/schema/bpmn/1.0",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "associations": [],
+  "types": [
+    {
+      "name": "TaskConfig",
+      "superClass": ["Element"],
+      "properties": [
+        { "name": "taskType", "isAttr": true, "type": "String" },
+        { "name": "resultVariable", "isAttr": true, "type": "String" },
+        { "name": "body", "isBody": true, "type": "String" }
+      ]
+    }
+  ]
+}

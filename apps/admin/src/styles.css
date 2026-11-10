@@ -1,0 +1,43 @@
+@import "tailwindcss";
+/* Opt-in only: Tailwind Plus inputs carry their own utilities, and the default strategy would add borders. */
+@plugin "@tailwindcss/forms" {
+  strategy: "class";
+}
+
+@theme {
+  --color-brand-50: var(--color-indigo-50);
+  --color-brand-100: var(--color-indigo-100);
+  --color-brand-500: var(--color-indigo-500);
+  --color-brand-600: var(--color-indigo-600);
+  --color-brand-700: var(--color-indigo-700);
+}
+
+/* bpmn-js puts its (licence-required) watermark at z-index 100; keep it visible but under drawers and menus. */
+.bjs-powered-by {
+  z-index: 10 !important;
+}
+
+/*
+ * bpmn-js markers. bpmn-js draws shapes as SVG with inline fill/stroke, which utilities cannot reach,
+ * so run and validation highlighting stays as plain CSS (unlayered, after the bpmn-js stylesheets).
+ */
+.djs-element.jidoka-error .djs-visual > :first-child {
+  stroke: var(--color-red-600) !important;
+  stroke-width: 3px !important;
+}
+.djs-element.jidoka-warning .djs-visual > :first-child {
+  stroke: var(--color-amber-500) !important;
+}
+.djs-element.jidoka-completed .djs-visual > :first-child {
+  fill: var(--color-green-50) !important;
+  stroke: var(--color-green-600) !important;
+}
+.djs-element.jidoka-active .djs-visual > :first-child {
+  fill: var(--color-indigo-50) !important;
+  stroke: var(--color-indigo-600) !important;
+  stroke-width: 3px !important;
+}
+.djs-element.jidoka-failed .djs-visual > :first-child {
+  fill: var(--color-red-50) !important;
+  stroke: var(--color-red-600) !important;
+}

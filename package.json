@@ -1,0 +1,20 @@
+{
+  "name": "openjidoka",
+  "private": true,
+  "version": "0.3.1",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @openjidoka/api dev",
+    "dev:worker": "pnpm --filter @openjidoka/worker dev",
+    "dev:admin": "pnpm --filter @openjidoka/admin dev",
+    "migrate": "pnpm --filter @openjidoka/db migrate",
+    "seed": "pnpm --filter @openjidoka/api seed",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build:admin": "pnpm --filter @openjidoka/admin build"
+  }
+}

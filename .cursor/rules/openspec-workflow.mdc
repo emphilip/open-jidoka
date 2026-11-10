@@ -1,0 +1,22 @@
+---
+description: All work on OpenJidoka goes through OpenSpec changes (propose, approve, apply, archive)
+alwaysApply: true
+---
+
+# OpenSpec for every change
+
+Every change to this project (features, fixes, refactors, config, docs) goes through an OpenSpec change.
+Requirements live in `openspec/specs/`; project constraints in `openspec/config.yaml`.
+
+1. **Propose** with the `openspec-propose` skill (`/opsx-propose`): proposal, spec deltas, design (when
+   needed) and tasks under `openspec/changes/<change-name>/`. Planning only: do not edit project code.
+2. **Stop for approval.** Show the proposal and wait for the user to approve or change it.
+3. **Apply** with `openspec-apply-change` (`/opsx-apply`) only after the user asks; tick tasks as you go.
+4. **Archive** with `openspec-archive-change` (`/opsx-archive`) when tasks are done and verified, so the
+   main specs reflect the new behavior.
+
+- Run `openspec list` first; continue an existing change instead of creating a duplicate.
+- A request to "just do it" still gets a change. For small fixes keep it small (proposal, delta, tasks; skip design),
+  but do not skip approval unless the user explicitly says to apply without review.
+- If code and specs disagree, raise it in the proposal rather than silently picking one.
+- Validate with `openspec validate <change> --strict --no-interactive` before asking for approval.

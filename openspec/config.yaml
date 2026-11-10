@@ -1,0 +1,29 @@
+schema: spec-driven
+
+context: |
+  OpenJidoka is a workflow automation harness for OpenJEV (an external AI service). Every change to code,
+  configuration or docs goes through an OpenSpec change; specs in openspec/specs are the requirements baseline.
+  README.md is the human-facing reference and must stay in sync: complete database schema and migration list,
+  API endpoints, business rules, feature status with the date each feature landed, known issues, and a
+  versioned, dated changelog. Each change bumps the version (semver; breaking changes bump the minor while < 1.0).
+  All UI work uses Tailwind CSS v4 built from Tailwind Plus components (see the global tailwind-ui skill).
+  The BPMN modeler stays on bpmn-js. All diagrams in docs and design artifacts use Mermaid.
+  Never put credentials, tokens, PII or client-identifying information in artifacts, code, tests or commits;
+  use placeholders and environment variables. Connector secrets live only in OPENJIDOKA_SECRET_* env vars.
+  Database changes need a new numbered migration; applied migrations are never edited.
+  Published workflow versions are immutable and in-flight runs keep their version, so parser or interpreter
+  changes must stay compatible with stored versions or say how old versions keep working.
+  Workflow interpreter code runs in Temporal's deterministic sandbox: no I/O there, side effects go in activities.
+  The OpenJEV HTTP API shape is unverified; keep all model calls behind the OpenJEV client interface.
+
+rules:
+  proposal:
+    - State what is out of scope.
+    - List the README sections and specs the change affects.
+  design:
+    - Use Mermaid for any diagram.
+  tasks:
+    - End with verification tasks for pnpm typecheck, pnpm test, and openspec validate --strict.
+    - Include an end-to-end check (docker compose stack plus scripts/smoke-test.sh) when runtime behavior changes.
+    - Include a task to update README.md (affected sections, version bump, dated changelog entry).
+    - For UI changes, include fetching the chosen Tailwind Plus blocks and a visual check at mobile and desktop widths.
